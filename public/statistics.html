@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Statistics — QuickOrder</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/statistics.css">
 </head>
@@ -12,7 +12,7 @@
 
 <header>
   <a href="index.html" class="back">← Back</a>
-  <span class="logo">QuickOrder</span>
+  <span class="logo">Quick<span style="color: var(--accent)">Order</span></span>
   <span class="header-right" id="updatedAt"></span>
 </header>
 
@@ -107,7 +107,7 @@
                   <span class="bar-num">${d.total_sold}</span>
                 </div>
               </td>
-              <td class="r" style="font-weight:400">₱${parseFloat(d.total_revenue).toLocaleString('en-PH',{minimumFractionDigits:2})}</td>
+              <td class="r">₱${parseFloat(d.total_revenue).toLocaleString('en-PH',{minimumFractionDigits:2})}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -133,9 +133,9 @@
         <div class="pair-row" style="animation-delay:${i*0.04}s">
           <div class="pair-rank">${i+1}</div>
           <div class="pair-names">
-            <strong style="font-weight:400">${d.product_a}</strong>
+            <strong>${d.product_a}</strong>
             <span class="pair-plus">+</span>
-            <strong style="font-weight:400">${d.product_b}</strong>
+            <strong>${d.product_b}</strong>
           </div>
           <div class="pair-pill">${d.pair_count}× together</div>
           <div class="pair-bar-wrap">

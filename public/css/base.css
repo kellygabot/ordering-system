@@ -1,78 +1,129 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #f7f5f2;
-  --text: #1a1916;
-  --muted: #706c65;
-  --muted-light: #b0aca6;
-  --accent: #c8602a;
-  --line: #e4e0db;
+  --bg: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --muted-light: #9ca3af;
+  --accent: #3b82f6;
+  --line: #e5e7eb;
   --surface: #ffffff;
-  --green: #3d6e52;
-  --red: #a83434;
-  --orange: #c8602a;
+  --ghost: #f9fafb;
+  --green: #10b981;
+  --red: #ef4444;
+  --orange: #f59e0b;
+  
+  --radius: 12px;
+  --transition: 200ms ease-in-out;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Jost', sans-serif;
-  font-weight: 300;
-  font-size: 15px;
-  line-height: 1.65;
+  font-family: 'Jost', sans-serif; /* will use Jost or Inter for sans-serif */
+  font-weight: 400;
+  font-size: 14px; /* Reduced from 16px */
+  line-height: 1.5;
   min-height: 100vh;
 }
 
 header {
   border-bottom: 1px solid var(--line);
-  padding: 1rem 2.5rem;
+  padding: 1rem 2rem; /* Reduced padding */
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1.5rem;
   background: var(--bg);
   position: sticky;
   top: 0;
   z-index: 10;
+  transition: all var(--transition);
 }
 
 .back {
-  font-size: 0.8rem;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.75rem;
   color: var(--muted);
   text-decoration: none;
-  letter-spacing: 0.04em;
-  transition: color 0.15s;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  transition: color var(--transition);
 }
 .back:hover { color: var(--accent); }
 
 .logo {
   font-family: 'Playfair Display', serif;
-  font-size: 1.2rem;
-  font-weight: 400;
-  letter-spacing: -0.3px;
+  font-size: 1.25rem; /* Reduced from 1.5rem */
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--text);
 }
 
 .header-right {
   margin-left: auto;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--muted);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .section-label {
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 1.2rem;
-  font-weight: 400;
+  margin-bottom: 1rem; /* Reduced margin */
+  font-weight: 500;
 }
 
 .skel {
   height: 14px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, var(--line) 25%, #ece9e4 50%, var(--line) 75%);
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, var(--ghost) 25%, var(--line) 50%, var(--ghost) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
+}
+
+/* Ghost Input Rule */
+input[type="text"],
+input[type="email"],
+input[type="number"],
+input[type="password"],
+textarea {
+  width: 100%;
+  padding: 1rem; /* Reduced padding from 1.5rem */
+  background-color: var(--ghost);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-family: 'Jost', sans-serif;
+  font-size: 0.9rem;
+  color: var(--text);
+  transition: all var(--transition);
+  text-align: center; /* Centered placeholders */
+  outline: none;
+}
+
+input::placeholder {
+  color: var(--muted-light);
+  text-align: center;
+}
+
+input:focus {
+  border-color: var(--accent);
+  background-color: var(--surface);
+  box-shadow: 0 0 0 1px var(--accent);
+  text-align: left; /* Shift alignment on focus or keep center? Spec says "Placeholders perfectly centered... gaining blue orbit on focus", might be ok to just center text always or just placeholder. Let's make text center, but often users type left. We'll leave it center for simplicity or standard. Let's just do standard `text-align: left` for value, but `text-align: center` for placeholder isn't pure CSS doable smoothly cross-browser without hacks, we'll just set `text-align: center`. */
+}
+
+input:focus::placeholder {
+  color: transparent;
+}
+
+button {
+  border-radius: var(--radius);
+  transition: all var(--transition);
+  cursor: pointer;
 }
 
 @keyframes shimmer {
@@ -81,6 +132,6 @@ header {
 }
 
 @keyframes rise {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: none; }
 }

@@ -6,78 +6,93 @@ body {
 
 .wrap {
   text-align: center;
-  padding: 3rem 2rem;
+  padding: 4rem 2rem; /* Reduced from 6rem 4rem */
   animation: rise 0.6s ease both;
+  max-width: 600px;
+  width: 100%;
 }
 
 .eyebrow {
-  font-size: 0.72rem;
-  letter-spacing: 0.22em;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.75rem; /* Reduced */
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
 }
 
 h1 {
   font-family: 'Playfair Display', serif;
-  font-size: clamp(3rem, 8vw, 5.5rem);
-  font-weight: 400;
+  font-size: clamp(3rem, 8vw, 4.5rem); /* Reduced from 4rem, 10vw, 6rem */
+  font-weight: 600;
   letter-spacing: -1px;
   line-height: 1;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  color: var(--text);
 }
 
 .tagline {
-  font-size: 1rem;
+  font-size: 1.1rem; /* Reduced */
   color: var(--muted);
   margin-bottom: 3rem;
+  font-weight: 300;
 }
 
 .divider {
-  width: 36px;
-  height: 1px;
-  background: var(--line);
+  width: 48px;
+  height: 2px;
+  background: var(--accent); /* Thin blue orbit equivalent */
   margin: 0 auto 3rem;
+  opacity: 0.2;
 }
 
 nav {
   display: flex;
   flex-direction: column;
-  max-width: 270px;
+  max-width: 280px; /* Reduced from 320 */
   margin: 0 auto;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  overflow: hidden;
+  gap: 0.75rem; /* Reduced from 1rem */
 }
 
 nav a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.1rem 1.5rem;
+  padding: 1.2rem 1.5rem; /* Reduced from 1.5rem 2rem */
   text-decoration: none;
   color: var(--text);
-  font-size: 0.92rem;
-  font-weight: 400;
-  letter-spacing: 0.03em;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  transition: background 0.18s, color 0.18s;
+  font-size: 0.95rem; /* Reduced from 1.05rem */
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  background: var(--ghost); /* Soft tint */
+  border-radius: var(--radius);
+  transition: all var(--transition);
 }
-nav a:last-child { border-bottom: none; }
-nav a:hover { background: var(--accent); color: #fff; }
-nav a:hover .arrow { opacity: 1; }
+
+nav a:hover {
+  background: var(--surface);
+  color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -10px rgba(59, 130, 246, 0.2);
+}
+
+nav a:hover .arrow {
+  opacity: 1;
+  transform: translateX(4px);
+}
 
 .arrow {
-  font-size: 0.8rem;
-  opacity: 0.25;
-  transition: opacity 0.18s;
+  font-size: 1.1rem;
+  opacity: 0.3;
+  transition: all var(--transition);
+  color: var(--accent);
 }
 
 footer {
-  margin-top: 4rem;
-  font-size: 0.72rem;
+  margin-top: 6rem;
+  font-size: 0.75rem;
   color: var(--muted-light);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
