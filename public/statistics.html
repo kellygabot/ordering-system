@@ -40,6 +40,8 @@
 </main>
 
 <script>
+  const fmt = (n) => parseFloat(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   function bsSkeleton() {
     return Array(5).fill(0).map(() => `
       <div class="skel-row">
@@ -71,7 +73,7 @@
     if (!d) { el.innerHTML = '<div class="err" style="padding:1.2rem">Could not load overview.</div>'; return; }
     el.innerHTML = `
       <div class="ov-card"><div class="ov-label">Total Orders</div><div class="ov-value">${d.total_orders}</div></div>
-      <div class="ov-card"><div class="ov-label">Revenue</div><div class="ov-value accent">₱${parseFloat(d.total_revenue).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
+      <div class="ov-card"><div class="ov-label">Revenue</div><div class="ov-value accent">₱${fmt(d.total_revenue)}</div></div>
       <div class="ov-card"><div class="ov-label">Customers</div><div class="ov-value">${d.total_customers}</div></div>
     `;
   }
@@ -99,7 +101,7 @@
               <td class="rank ${i < 3 ? 'top' : ''}">${i+1}</td>
               <td>
                 <div class="bs-name">${d.product_name}</div>
-                <div class="bs-meta">${d.order_count} order${d.order_count !== 1 ? 's' : ''} · ₱${parseFloat(d.price).toFixed(2)} each</div>
+                <div class="bs-meta">${d.order_count} order${d.order_count !== 1 ? 's' : ''} · ₱${fmt(d.price)} each</div>
               </td>
               <td>
                 <div class="bar-wrap">
@@ -107,16 +109,15 @@
                   <span class="bar-num">${d.total_sold}</span>
                 </div>
               </td>
-              <td class="r">₱${parseFloat(d.total_revenue).toLocaleString('en-PH',{minimumFractionDigits:2})}</td>
+              <td class="r">₱${fmt(d.total_revenue)}</td>
             </tr>
           `).join('')}
         </tbody>
       </table>`;
 
+    // Single rAF is sufficient to let the DOM paint before animating
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.querySelectorAll('.bar-fill').forEach(b => b.style.transform = 'scaleX(1)');
-      });
+      document.querySelectorAll('.bar-fill').forEach(b => b.style.transform = 'scaleX(1)');
     });
   }
 
@@ -146,9 +147,7 @@
     }</div>`;
 
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.querySelectorAll('.bar-fill').forEach(b => b.style.transform = 'scaleX(1)');
-      });
+      document.querySelectorAll('.bar-fill').forEach(b => b.style.transform = 'scaleX(1)');
     });
   }
 

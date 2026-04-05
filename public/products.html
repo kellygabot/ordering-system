@@ -22,7 +22,7 @@
     </div>
 
     <div class="search-wrap">
-      <input type="text" id="search" placeholder="Search products…" oninput="filter()">
+      <input type="text" id="search" placeholder="Search products…">
     </div>
 
     <div id="output"></div>
@@ -30,6 +30,7 @@
 
   <script>
     let all = [];
+    let filterTimer;
 
     function stockClass(s) {
       if (s <= 0) return 's-out';
@@ -66,7 +67,7 @@
                 <div class="p-id">#${p.product_id}</div>
               </div>
               <div class="p-desc">${p.description || '—'}</div>
-              <div class="p-price">₱${parseFloat(p.price).toFixed(2)}</div>
+              <div class="p-price">₱${parseFloat(p.price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               <div class="stock-pill ${stockClass(p.stock)}">
                 <span class="dot"></span>${stockLabel(p.stock)}
               </div>
@@ -74,6 +75,12 @@
           `).join('')}
         </div>`;
     }
+
+    // Debounced filter — avoids re-rendering on every keystroke
+    document.getElementById('search').addEventListener('input', () => {
+      clearTimeout(filterTimer);
+      filterTimer = setTimeout(filter, 300);
+    });
 
     function filter() {
       const q = document.getElementById('search').value.toLowerCase();

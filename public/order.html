@@ -44,7 +44,7 @@
       <!-- Product Picker -->
       <div class="section">
         <div class="section-label">Select Items</div>
-        <input class="product-search" id="productSearch" type="text" placeholder="Search menu…" oninput="filterProducts()">
+        <input class="product-search" id="productSearch" type="text" placeholder="Search menu…">
         <div class="product-grid" id="productGrid"></div>
       </div>
     </div>
@@ -68,7 +68,12 @@
 
   <script>
     let allProducts = [];
+    let productMap = new Map(); // O(1) lookups by product_id
     let cart = {};
+
+    function fmt(n) {
+      return parseFloat(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
 
     function stockClass(s) {
       if (s <= 0) return 's-out';
@@ -98,7 +103,7 @@
               <div class="pc-name">${p.product_name}</div>
               ${p.description ? `<div class="pc-desc">${p.description}</div>` : ''}
               <div class="pc-meta">
-                <span class="pc-price">₱${parseFloat(p.price).toFixed(2)}</span>
+                <span class="pc-price">₱${fmt(p.price)}</span>
                 <span class="pc-stock ${sc}">${stockLabel(p.stock)}</span>
               </div>
             </div>
@@ -121,7 +126,7 @@
     }
 
     function changeQty(id, delta) {
-      const product = allProducts.find(p => p.product_id === id);
+      const product = productMap.get(id);
       if (!product) return;
 
       const current = cart[id] || 0;
@@ -156,19 +161,26 @@
 
       let total = 0;
       sumLines.innerHTML = cartItems.map(id => {
-        const p = allProducts.find(p => p.product_id == id);
+        const p = productMap.get(parseInt(id));
         const qty = cart[id];
         const sub = qty * parseFloat(p.price);
         total += sub;
         return `<div class="summary-line">
           <span>${p.product_name} ×${qty}</span>
-          <span>₱${sub.toFixed(2)}</span>
+          <span>₱${fmt(sub)}</span>
         </div>`;
       }).join('');
 
-      totalEl.textContent = '₱' + total.toFixed(2);
+      totalEl.textContent = '₱' + fmt(total);
       submitBtn.disabled = false;
     }
+
+    // Debounced search — avoids re-rendering on every keystroke
+    let searchTimer;
+    document.getElementById('productSearch').addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(filterProducts, 300);
+    });
 
     function filterProducts() {
       const q = document.getElementById('productSearch').value.toLowerCase();
@@ -197,6 +209,7 @@
         const res = await fetch('/products');
         if (!res.ok) throw new Error('HTTP ' + res.status);
         allProducts = await res.json();
+        productMap = new Map(allProducts.map(p => [p.product_id, p]));
         renderGrid(allProducts);
       } catch (e) {
         document.getElementById('productGrid').innerHTML =
@@ -222,7 +235,7 @@
       btn.innerHTML = '<span class="spin"></span>Placing…';
 
       const items = Object.keys(cart).map(id => {
-        const p = allProducts.find(p => p.product_id == id);
+        const p = productMap.get(parseInt(id));
         return { product_id: parseInt(id), quantity: cart[id], price: parseFloat(p.price) };
       });
 
@@ -235,7 +248,7 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Server error');
 
-        toast('ok', `Order #${data.order_id} placed — ₱${parseFloat(data.total_amount).toFixed(2)}`);
+        toast('ok', `Order #${data.order_id} placed — ₱${fmt(data.total_amount)}`);
         cart = {};
         renderSummary();
         ['full_name','email','phone','address'].forEach(id => document.getElementById(id).value = '');

@@ -67,43 +67,51 @@ function placeOrder(customerId, items, res) {
       if (err) return res.status(500).json({ message: err.message });
 
       const orderId = orderResult.insertId;
-      let hasError = false;
+      // Each item fires 2 queries; track all completions before responding.
+      let pending = items.length * 2;
+      let responded = false;
+
+      function done(err) {
+        if (responded) return;
+        if (err) {
+          responded = true;
+          return res.status(500).json({ message: err.message });
+        }
+        pending--;
+        if (pending === 0) {
+          responded = true;
+          res.json({
+            message: "Order saved successfully",
+            order_id: orderId,
+            total_amount: totalAmount,
+          });
+        }
+      }
 
       items.forEach((item) => {
         const subtotal = item.quantity * item.price;
 
-        // Lab 3: includes unit_price to match updated order_items schema
         db.query(
           `INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal)
            VALUES (?, ?, ?, ?, ?)`,
           [orderId, item.product_id, item.quantity, item.price, subtotal],
-          (err) => {
-            if (err && !hasError) {
-              hasError = true;
-              return res.status(500).json({ message: err.message });
-            }
-          },
+          (err) => done(err),
         );
 
+        // Atomic decrement: only succeeds if sufficient stock exists (prevents overselling).
         db.query(
-          `UPDATE products SET stock = stock - ? WHERE product_id = ?`,
-          [item.quantity, item.product_id],
-          (err) => {
-            if (err && !hasError) {
-              hasError = true;
-              return res.status(500).json({ message: err.message });
+          `UPDATE products SET stock = stock - ? WHERE product_id = ? AND stock >= ?`,
+          [item.quantity, item.product_id, item.quantity],
+          (err, result) => {
+            if (!err && result.affectedRows === 0) {
+              err = new Error(
+                `Insufficient stock for product ID ${item.product_id}.`,
+              );
             }
+            done(err);
           },
         );
       });
-
-      if (!hasError) {
-        res.json({
-          message: "Order saved successfully",
-          order_id: orderId,
-          total_amount: totalAmount,
-        });
-      }
     },
   );
 }
