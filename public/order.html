@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Place Order — QuickOrder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/order.css">
+</head>
+<body>
+  <header>
+    <a href="index.html" class="back">← Back</a>
+    <span class="logo">QuickOrder</span>
+  </header>
+
+  <div class="layout">
+    <div class="left">
+      <h1>Place an Order</h1>
+
+      <!-- Customer Details -->
+      <div class="section">
+        <div class="section-label">Customer Details</div>
+        <div class="field-grid">
+          <div class="field">
+            <label for="full_name">Full Name</label>
+            <input id="full_name" type="text" placeholder="Juan Dela Cruz">
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" placeholder="juan@email.com">
+          </div>
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input id="phone" type="text" placeholder="09171234567">
+          </div>
+          <div class="field">
+            <label for="address">Address</label>
+            <input id="address" type="text" placeholder="Manila">
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Picker -->
+      <div class="section">
+        <div class="section-label">Select Items</div>
+        <input class="product-search" id="productSearch" type="text" placeholder="Search menu…" oninput="filterProducts()">
+        <div class="product-grid" id="productGrid"></div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h2>Your Order</h2>
+      <div class="summary-lines" id="summaryLines">
+        <div class="summary-line"><span>Items</span><span>—</span></div>
+      </div>
+      <div class="total-line">
+        <span class="total-label">Total</span>
+        <span class="total-amount" id="totalAmt">₱0.00</span>
+      </div>
+      <button class="submit-btn" id="submitBtn" disabled onclick="submit()">Place Order</button>
+      <p class="note">Stock updates automatically on order confirmation.</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let allProducts = [];
+    let cart = {};
+
+    function stockClass(s) {
+      if (s <= 0) return 's-out';
+      if (s <= 10) return 's-low';
+      return 's-in';
+    }
+    function stockLabel(s) {
+      if (s <= 0) return 'Out of stock';
+      if (s <= 10) return `${s} left`;
+      return `${s} in stock`;
+    }
+
+    function renderGrid(products) {
+      const grid = document.getElementById('productGrid');
+      if (!products.length) {
+        grid.innerHTML = '<div class="empty-items" style="border-top:none">No products match your search.</div>';
+        return;
+      }
+
+      grid.innerHTML = products.map(p => {
+        const qty = cart[p.product_id] || 0;
+        const sc = stockClass(p.stock);
+        const isOut = p.stock <= 0;
+        return `
+          <div class="pc-row ${isOut ? 'out-of-stock' : ''}" id="pcrow-${p.product_id}">
+            <div>
+              <div class="pc-name">${p.product_name}</div>
+              ${p.description ? `<div class="pc-desc">${p.description}</div>` : ''}
+              <div class="pc-meta">
+                <span class="pc-price">₱${parseFloat(p.price).toFixed(2)}</span>
+                <span class="pc-stock ${sc}">${stockLabel(p.stock)}</span>
+              </div>
+            </div>
+            <div class="pc-actions" id="pca-${p.product_id}">
+              ${qty > 0 ? stepperHTML(p.product_id, qty) : addBtnHTML(p.product_id)}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function stepperHTML(id, qty) {
+      return `
+        <div class="qty-btn minus" onclick="changeQty(${id}, -1)">−</div>
+        <div class="qty-display">${qty}</div>
+        <div class="qty-btn plus" onclick="changeQty(${id}, 1)">+</div>`;
+    }
+
+    function addBtnHTML(id) {
+      return `<button class="add-btn" onclick="changeQty(${id}, 1)">Add +</button>`;
+    }
+
+    function changeQty(id, delta) {
+      const product = allProducts.find(p => p.product_id === id);
+      if (!product) return;
+
+      const current = cart[id] || 0;
+      const next = Math.max(0, Math.min(current + delta, product.stock));
+
+      if (next === 0) {
+        delete cart[id];
+      } else {
+        cart[id] = next;
+      }
+
+      const actionsEl = document.getElementById(`pca-${id}`);
+      if (actionsEl) {
+        actionsEl.innerHTML = next > 0 ? stepperHTML(id, next) : addBtnHTML(id);
+      }
+
+      renderSummary();
+    }
+
+    function renderSummary() {
+      const sumLines = document.getElementById('summaryLines');
+      const totalEl = document.getElementById('totalAmt');
+      const submitBtn = document.getElementById('submitBtn');
+      const cartItems = Object.keys(cart);
+
+      if (!cartItems.length) {
+        sumLines.innerHTML = '<div class="summary-line"><span>Items</span><span>—</span></div>';
+        totalEl.textContent = '₱0.00';
+        submitBtn.disabled = true;
+        return;
+      }
+
+      let total = 0;
+      sumLines.innerHTML = cartItems.map(id => {
+        const p = allProducts.find(p => p.product_id == id);
+        const qty = cart[id];
+        const sub = qty * parseFloat(p.price);
+        total += sub;
+        return `<div class="summary-line">
+          <span>${p.product_name} ×${qty}</span>
+          <span>₱${sub.toFixed(2)}</span>
+        </div>`;
+      }).join('');
+
+      totalEl.textContent = '₱' + total.toFixed(2);
+      submitBtn.disabled = false;
+    }
+
+    function filterProducts() {
+      const q = document.getElementById('productSearch').value.toLowerCase();
+      const filtered = allProducts.filter(p =>
+        p.product_name.toLowerCase().includes(q) ||
+        (p.description || '').toLowerCase().includes(q)
+      );
+      renderGrid(filtered);
+    }
+
+    function showGridSkeleton() {
+      document.getElementById('productGrid').innerHTML = Array(5).fill(`
+        <div class="pc-skel-row">
+          <div>
+            <div class="skel" style="width:45%;margin-bottom:8px"></div>
+            <div class="skel" style="width:70%;height:11px;margin-bottom:8px"></div>
+            <div class="skel" style="width:30%;height:11px"></div>
+          </div>
+          <div class="skel" style="width:60px;height:32px"></div>
+        </div>`).join('');
+    }
+
+    async function loadProducts() {
+      showGridSkeleton();
+      try {
+        const res = await fetch('/products');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        allProducts = await res.json();
+        renderGrid(allProducts);
+      } catch (e) {
+        document.getElementById('productGrid').innerHTML =
+          `<div class="empty-items" style="color:var(--red);border-top:none">⚠ Could not load menu — ${e.message}</div>`;
+      }
+    }
+
+    async function submit() {
+      const full_name = document.getElementById('full_name').value.trim();
+      const email    = document.getElementById('email').value.trim();
+      const phone    = document.getElementById('phone').value.trim();
+      const address  = document.getElementById('address').value.trim();
+
+      if (!full_name || !email || !phone || !address) {
+        toast('err', 'Please fill in all customer details.'); return;
+      }
+      if (!Object.keys(cart).length) {
+        toast('err', 'Add at least one item.'); return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spin"></span>Placing…';
+
+      const items = Object.keys(cart).map(id => {
+        const p = allProducts.find(p => p.product_id == id);
+        return { product_id: parseInt(id), quantity: cart[id], price: parseFloat(p.price) };
+      });
+
+      try {
+        const res = await fetch('/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ full_name, email, phone, address, items })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Server error');
+
+        toast('ok', `Order #${data.order_id} placed — ₱${parseFloat(data.total_amount).toFixed(2)}`);
+        cart = {};
+        renderSummary();
+        ['full_name','email','phone','address'].forEach(id => document.getElementById(id).value = '');
+        await loadProducts();
+      } catch (e) {
+        toast('err', e.message);
+        btn.disabled = false;
+      } finally {
+        btn.innerHTML = 'Place Order';
+        if (Object.keys(cart).length) btn.disabled = false;
+      }
+    }
+
+    function toast(type, msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast ' + type + ' show';
+      setTimeout(() => t.classList.remove('show'), 4000);
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statistics — QuickOrder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/statistics.css">
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="back">← Back</a>
+  <span class="logo">QuickOrder</span>
+  <span class="header-right" id="updatedAt"></span>
+</header>
+
+<main>
+  <div class="page-head">
+    <h1>Statistics</h1>
+    <p class="page-sub">Sales performance and ordering patterns</p>
+  </div>
+
+  <div class="overview" id="overview">
+    <div class="ov-card"><div class="ov-label">Total Orders</div><div class="ov-value skel" style="width:60%;height:2rem"></div></div>
+    <div class="ov-card"><div class="ov-label">Revenue</div><div class="ov-value skel" style="width:70%;height:2rem"></div></div>
+    <div class="ov-card"><div class="ov-label">Customers</div><div class="ov-value skel" style="width:50%;height:2rem"></div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Best Sellers</div>
+    <div id="bestsellers"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Commonly Bought Together</div>
+    <div id="pairings"></div>
+  </div>
+</main>
+
+<script>
+  function bsSkeleton() {
+    return Array(5).fill(0).map(() => `
+      <div class="skel-row">
+        <div class="skel" style="width:1.5rem;height:1rem;flex-shrink:0"></div>
+        <div style="flex:1"><div class="skel" style="width:55%;margin-bottom:6px"></div><div class="skel" style="width:35%;height:10px"></div></div>
+        <div class="skel" style="width:100px;height:10px"></div>
+        <div class="skel" style="width:50px;height:10px"></div>
+      </div>`).join('');
+  }
+
+  document.getElementById('bestsellers').innerHTML = bsSkeleton();
+  document.getElementById('pairings').innerHTML = bsSkeleton();
+
+  async function load() {
+    const [ov, bs, pa] = await Promise.all([
+      fetch('/stats/overview').then(r => r.json()).catch(() => null),
+      fetch('/stats/bestsellers').then(r => r.json()).catch(() => []),
+      fetch('/stats/pairings').then(r => r.json()).catch(() => []),
+    ]);
+
+    document.getElementById('updatedAt').textContent = 'Updated ' + new Date().toLocaleTimeString();
+    renderOverview(ov);
+    renderBestsellers(bs);
+    renderPairings(pa);
+  }
+
+  function renderOverview(d) {
+    const el = document.getElementById('overview');
+    if (!d) { el.innerHTML = '<div class="err" style="padding:1.2rem">Could not load overview.</div>'; return; }
+    el.innerHTML = `
+      <div class="ov-card"><div class="ov-label">Total Orders</div><div class="ov-value">${d.total_orders}</div></div>
+      <div class="ov-card"><div class="ov-label">Revenue</div><div class="ov-value accent">₱${parseFloat(d.total_revenue).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
+      <div class="ov-card"><div class="ov-label">Customers</div><div class="ov-value">${d.total_customers}</div></div>
+    `;
+  }
+
+  function renderBestsellers(data) {
+    const el = document.getElementById('bestsellers');
+    if (!data || !data.length) {
+      el.innerHTML = '<div class="empty">No sales data yet.</div>'; return;
+    }
+    const max = Math.max(...data.map(d => Number(d.total_sold)));
+
+    el.innerHTML = `
+      <table class="bs-table">
+        <thead>
+          <tr>
+            <th style="width:2rem"></th>
+            <th>Product</th>
+            <th>Units Sold</th>
+            <th class="r">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map((d, i) => `
+            <tr>
+              <td class="rank ${i < 3 ? 'top' : ''}">${i+1}</td>
+              <td>
+                <div class="bs-name">${d.product_name}</div>
+                <div class="bs-meta">${d.order_count} order${d.order_count !== 1 ? 's' : ''} · ₱${parseFloat(d.price).toFixed(2)} each</div>
+              </td>
+              <td>
+                <div class="bar-wrap">
+                  <div class="bar-track"><div class="bar-fill" style="width:${(d.total_sold/max*100).toFixed(1)}%"></div></div>
+                  <span class="bar-num">${d.total_sold}</span>
+                </div>
+              </td>
+              <td class="r" style="font-weight:400">₱${parseFloat(d.total_revenue).toLocaleString('en-PH',{minimumFractionDigits:2})}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.bar-fill').forEach(b => b.style.transform = 'scaleX(1)');
+      });
+    });
+  }
+
+  function renderPairings(data) {
+    const el = document.getElementById('pairings');
+    if (!data || !data.length) {
+      el.innerHTML = '<div class="empty">Not enough order data to find pairings yet. Pairings appear once multiple items are ordered together.</div>';
+      return;
+    }
+    const max = Math.max(...data.map(d => Number(d.pair_count)));
+
+    el.innerHTML = `<div class="pairs-list">${
+      data.map((d, i) => `
+        <div class="pair-row" style="animation-delay:${i*0.04}s">
+          <div class="pair-rank">${i+1}</div>
+          <div class="pair-names">
+            <strong style="font-weight:400">${d.product_a}</strong>
+            <span class="pair-plus">+</span>
+            <strong style="font-weight:400">${d.product_b}</strong>
+          </div>
+          <div class="pair-pill">${d.pair_count}× together</div>
+          <div class="pair-bar-wrap">
+            <div class="bar-track" style="flex:1"><div class="bar-fill" style="background:var(--green);width:${(d.pair_count/max*100).toFixed(1)}%"></div></div>
+          </div>
+        </div>
+      `).join('')
+    }</div>`;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.bar-fill').forEach(b => b.style.transform = 'scaleX(1)');
+      });
+    });
+  }
+
+  load();
+</script>
+</body>
+</html>

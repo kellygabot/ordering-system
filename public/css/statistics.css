@@ -1,0 +1,126 @@
+main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 3.5rem 2.5rem 5rem;
+  animation: rise 0.5s ease both;
+}
+
+.page-head { margin-bottom: 3rem; }
+
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  margin-bottom: 0.4rem;
+}
+.page-sub { font-size: 0.88rem; color: var(--muted); }
+
+.overview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 3.5rem;
+}
+@media(max-width: 640px) { .overview { grid-template-columns: 1fr 1fr; } }
+@media(max-width: 380px) { .overview { grid-template-columns: 1fr; } }
+
+.ov-card {
+  padding: 1.8rem 1.6rem;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+.ov-card:last-child { border-right: none; }
+@media(max-width: 640px) {
+  .ov-card:nth-child(2) { border-right: none; }
+  .ov-card:nth-child(3) { border-top: 1px solid var(--line); }
+  .ov-card:nth-child(4) { border-top: 1px solid var(--line); border-right: none; }
+}
+
+.ov-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.7rem;
+  font-weight: 400;
+}
+.ov-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.1rem;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.ov-value.accent { color: var(--accent); }
+
+.section { margin-bottom: 3.5rem; }
+
+.bs-table { width: 100%; border-collapse: collapse; }
+.bs-table thead th {
+  text-align: left;
+  font-size: 0.7rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 400;
+  padding: 0 0 0.8rem;
+  border-bottom: 1px solid var(--line);
+}
+.bs-table thead th.r { text-align: right; }
+.bs-table tbody tr { border-bottom: 1px solid var(--line); }
+.bs-table tbody tr:last-child { border-bottom: none; }
+.bs-table tbody td { padding: 1.05rem 0; vertical-align: middle; font-size: 0.92rem; }
+.bs-table tbody td.r { text-align: right; }
+
+.rank { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--muted-light); width: 2rem; }
+.rank.top { color: var(--accent); }
+.bs-name { font-weight: 400; font-size: 0.95rem; }
+.bs-meta { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+
+.bar-wrap { display: flex; align-items: center; gap: 0.8rem; }
+.bar-track { flex: 1; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.65s cubic-bezier(0.23,1,0.32,1);
+}
+.bar-num { font-size: 0.82rem; font-weight: 400; min-width: 2.5rem; text-align: right; }
+
+.pairs-list { display: flex; flex-direction: column; }
+.pair-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 0;
+  border-bottom: 1px solid var(--line);
+  opacity: 0;
+  animation: fadeRow 0.3s ease forwards;
+}
+.pair-row:first-child { border-top: 1px solid var(--line); }
+@keyframes fadeRow { to { opacity: 1; } }
+
+.pair-rank  { font-family: 'Playfair Display', serif; font-size: 0.95rem; color: var(--muted-light); width: 1.5rem; flex-shrink: 0; }
+.pair-names { flex: 1; font-size: 0.92rem; }
+.pair-plus  { color: var(--muted-light); margin: 0 0.4rem; font-size: 0.78rem; }
+.pair-pill {
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  padding: 0.22rem 0.7rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pair-bar-wrap { width: 120px; display: flex; align-items: center; gap: 0.6rem; }
+@media(max-width: 500px) { .pair-bar-wrap { display: none; } }
+
+.empty { font-size: 0.88rem; color: var(--muted); padding: 1.5rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); line-height: 1.6; }
+.err   { font-size: 0.88rem; color: var(--red); padding: 1rem 0; }
+.skel-row { display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--line); align-items: center; }
