@@ -15,6 +15,10 @@ services:
       NODE_ENV: production
     ports:
       - 3000:3000
+  db:
+    image: mysql:latest
+    ports:
+      - "3307:3306"  # Map local port 3307 to container port 3306
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to
