@@ -7,6 +7,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static("public"));
+const PORT = process.env.PORT || 3000;
 
 // --- Products ---
 app.get("/products", (req, res) => {
@@ -171,6 +172,6 @@ app.get("/stats/pairings", (req, res) => {
   });
 });
 
-app.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
