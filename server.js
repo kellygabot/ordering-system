@@ -24,6 +24,11 @@ app.post("/order", (req, res) => {
   if (!full_name || !email || !phone || !address || !items || !items.length) {
     return res.status(400).json({ message: "Missing required fields." });
   }
+  if (/\d/.test(full_name)) {
+    return res
+      .status(400)
+      .json({ message: "Full Name must not contain numbers." });
+  }
 
   db.query(
     "SELECT customer_id FROM customers WHERE email = ?",

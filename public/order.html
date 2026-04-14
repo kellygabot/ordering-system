@@ -24,7 +24,7 @@
         <div class="field-grid">
           <div class="field">
             <label for="full_name">Full Name</label>
-            <input id="full_name" type="text" placeholder="Juan Dela Cruz">
+            <input id="full_name" type="text" placeholder="Juan Dela Cruz" pattern="^[^0-9]+$" title="Full Name must not contain numbers.">
           </div>
           <div class="field">
             <label for="email">Email</label>
@@ -177,6 +177,10 @@
 
     // Debounced search — avoids re-rendering on every keystroke
     let searchTimer;
+    document.getElementById('full_name').addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\d/g, '');
+    });
+
     document.getElementById('productSearch').addEventListener('input', () => {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(filterProducts, 300);
@@ -225,6 +229,9 @@
 
       if (!full_name || !email || !phone || !address) {
         toast('err', 'Please fill in all customer details.'); return;
+      }
+      if (/\d/.test(full_name)) {
+        toast('err', 'Full Name must not contain numbers.'); return;
       }
       if (!Object.keys(cart).length) {
         toast('err', 'Add at least one item.'); return;
