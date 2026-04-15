@@ -44,10 +44,13 @@ function rollbackAsync() {
 
 // --- Products ---
 app.get("/products", (req, res) => {
-  db.query("SELECT * FROM products ORDER BY product_name ASC", (err, result) => {
-    if (err) return res.status(500).json({ message: err.message });
-    res.json(result);
-  });
+  db.query(
+    "SELECT * FROM products ORDER BY product_name ASC",
+    (err, result) => {
+      if (err) return res.status(500).json({ message: err.message });
+      res.json(result);
+    },
+  );
 });
 
 app.put("/products/:productId/stock", (req, res) => {
@@ -78,7 +81,10 @@ app.put("/products/:productId/stock", (req, res) => {
         [productId],
         (err, rows) => {
           if (err) return res.status(500).json({ message: err.message });
-          res.json({ message: "Stock updated successfully.", product: rows[0] });
+          res.json({
+            message: "Stock updated successfully.",
+            product: rows[0],
+          });
         },
       );
     },
@@ -98,7 +104,9 @@ app.post("/order", (req, res) => {
       .json({ message: "Full Name must not contain numbers." });
   }
   if (!/^\d+$/.test(phone)) {
-    return res.status(400).json({ message: "Phone must contain numbers only." });
+    return res
+      .status(400)
+      .json({ message: "Phone must contain numbers only." });
   }
 
   db.query(

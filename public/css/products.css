@@ -14,7 +14,7 @@ main {
 }
 
 h1 {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
   font-size: 2.5rem; /* Reduced from 3rem */
   font-weight: 600;
   letter-spacing: -1px;
@@ -22,7 +22,7 @@ h1 {
 }
 
 .item-count {
-  font-family: 'Jost', sans-serif;
+  font-family: "Jost", sans-serif;
   font-size: 0.85rem;
   color: var(--muted);
   letter-spacing: 0.1em;
@@ -47,7 +47,7 @@ h1 {
 }
 
 .col-head {
-  font-family: 'Jost', sans-serif;
+  font-family: "Jost", sans-serif;
   font-size: 0.7rem; /* Reduced */
   letter-spacing: 0.15em; /* Reduced */
   text-transform: uppercase;
@@ -70,15 +70,35 @@ h1 {
 .product-row:hover {
   background: var(--ghost);
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -10px rgba(0,0,0,0.05); /* Soft shadow */
+  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.05); /* Soft shadow */
 }
 
-@keyframes fadeRow { to { opacity: 1; } }
+@keyframes fadeRow {
+  to {
+    opacity: 1;
+  }
+}
 
-.p-name { font-weight: 500; font-size: 1rem; color: var(--text); margin-bottom: 0.2rem; }
-.p-id   { font-size: 0.8rem; color: var(--muted-light); }
-.p-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
-.p-price { font-size: 0.95rem; font-weight: 500; color: var(--text); }
+.p-name {
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+.p-id {
+  font-size: 0.8rem;
+  color: var(--muted-light);
+}
+.p-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.p-price {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+}
 
 .stock-pill {
   display: inline-flex;
@@ -113,12 +133,24 @@ h1 {
   border-radius: 50%;
   flex-shrink: 0;
 }
-.s-in  .dot { background: var(--green); }
-.s-low .dot { background: var(--orange); }
-.s-out .dot { background: var(--red); }
-.s-in  { color: var(--green); }
-.s-low { color: var(--orange); }
-.s-out { color: var(--red); }
+.s-in .dot {
+  background: var(--green);
+}
+.s-low .dot {
+  background: var(--orange);
+}
+.s-out .dot {
+  background: var(--red);
+}
+.s-in {
+  color: var(--green);
+}
+.s-low {
+  color: var(--orange);
+}
+.s-out {
+  color: var(--red);
+}
 
 .skel-row {
   display: grid;

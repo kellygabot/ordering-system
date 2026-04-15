@@ -1,58 +1,64 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Menu — QuickOrder</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/products.css">
-</head>
-<body>
-  <header>
-    <a href="index.html" class="back">← Back</a>
-    <span class="logo">Quick<span style="color: var(--accent)">Order</span></span>
-    <span class="header-right" id="updatedAt"></span>
-  </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Menu — QuickOrder</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Jost:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/products.css" />
+  </head>
+  <body>
+    <header>
+      <a href="index.html" class="back">← Back</a>
+      <span class="logo"
+        >Quick<span style="color: var(--accent)">Order</span></span
+      >
+      <span class="header-right" id="updatedAt"></span>
+    </header>
 
-  <main>
-    <div class="page-head">
-      <h1>Menu</h1>
-      <span class="item-count" id="countLabel"></span>
-    </div>
+    <main>
+      <div class="page-head">
+        <h1>Menu</h1>
+        <span class="item-count" id="countLabel"></span>
+      </div>
 
-    <div class="search-wrap">
-      <input type="text" id="search" placeholder="Search products…">
-    </div>
+      <div class="search-wrap">
+        <input type="text" id="search" placeholder="Search products…" />
+      </div>
 
-    <div id="output"></div>
-  </main>
+      <div id="output"></div>
+    </main>
 
-  <script>
-    let all = [];
-    let filterTimer;
+    <script>
+      let all = [];
+      let filterTimer;
 
-    function stockClass(s) {
-      if (s <= 0) return 's-out';
-      if (s <= 10) return 's-low';
-      return 's-in';
-    }
-    function stockLabel(s) {
-      if (s <= 0) return 'Out of stock';
-      if (s <= 10) return `${s} left`;
-      return `${s} in stock`;
-    }
-
-    function render(items) {
-      const out = document.getElementById('output');
-      document.getElementById('countLabel').textContent = items.length + ' item' + (items.length !== 1 ? 's' : '');
-
-      if (!items.length) {
-        out.innerHTML = '<div class="empty">No products found.</div>';
-        return;
+      function stockClass(s) {
+        if (s <= 0) return "s-out";
+        if (s <= 10) return "s-low";
+        return "s-in";
+      }
+      function stockLabel(s) {
+        if (s <= 0) return "Out of stock";
+        if (s <= 10) return `${s} left`;
+        return `${s} in stock`;
       }
 
-      out.innerHTML = `
+      function render(items) {
+        const out = document.getElementById("output");
+        document.getElementById("countLabel").textContent =
+          items.length + " item" + (items.length !== 1 ? "s" : "");
+
+        if (!items.length) {
+          out.innerHTML = '<div class="empty">No products found.</div>';
+          return;
+        }
+
+        out.innerHTML = `
         <div class="col-head-row">
           <div class="col-head">Product</div>
           <div class="col-head">Description</div>
@@ -60,14 +66,16 @@
           <div class="col-head">Stock</div>
         </div>
         <div class="product-list">
-          ${items.map((p, i) => `
-            <div class="product-row" style="animation-delay:${i*0.04}s">
+          ${items
+            .map(
+              (p, i) => `
+            <div class="product-row" style="animation-delay:${i * 0.04}s">
               <div>
                 <div class="p-name">${p.product_name}</div>
                 <div class="p-id">#${p.product_id}</div>
               </div>
-              <div class="p-desc">${p.description || '—'}</div>
-              <div class="p-price">₱${parseFloat(p.price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div class="p-desc">${p.description || "—"}</div>
+              <div class="p-price">₱${parseFloat(p.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               <div class="stock-cell">
                 <div class="stock-pill ${stockClass(p.stock)}">
                   <span class="dot"></span>${stockLabel(p.stock)}
@@ -75,79 +83,97 @@
                 <button class="stock-btn" onclick="updateStock(${p.product_id}, ${p.stock})">Update</button>
               </div>
             </div>
-          `).join('')}
+          `,
+            )
+            .join("")}
         </div>`;
-    }
-
-    async function updateStock(productId, currentStock) {
-      const value = prompt('Enter new stock quantity:', String(currentStock));
-      if (value === null) return;
-
-      const newStock = Number(value);
-      if (!Number.isInteger(newStock) || newStock < 0) {
-        alert('Please enter a valid non-negative whole number.');
-        return;
       }
 
-      try {
-        const res = await fetch(`/products/${productId}/stock`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ stock: newStock })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Failed to update stock.');
+      async function updateStock(productId, currentStock) {
+        const value = prompt("Enter new stock quantity:", String(currentStock));
+        if (value === null) return;
 
-        all = all.map((item) => item.product_id === productId ? { ...item, stock: newStock } : item);
-        filter();
-        document.getElementById('updatedAt').textContent = 'Updated ' + new Date().toLocaleTimeString();
-      } catch (e) {
-        alert(e.message);
+        const newStock = Number(value);
+        if (!Number.isInteger(newStock) || newStock < 0) {
+          alert("Please enter a valid non-negative whole number.");
+          return;
+        }
+
+        try {
+          const res = await fetch(`/products/${productId}/stock`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ stock: newStock }),
+          });
+          const data = await res.json();
+          if (!res.ok)
+            throw new Error(data.message || "Failed to update stock.");
+
+          all = all.map((item) =>
+            item.product_id === productId ? { ...item, stock: newStock } : item,
+          );
+          filter();
+          document.getElementById("updatedAt").textContent =
+            "Updated " + new Date().toLocaleTimeString();
+        } catch (e) {
+          alert(e.message);
+        }
       }
-    }
 
-    // Debounced filter — avoids re-rendering on every keystroke
-    document.getElementById('search').addEventListener('input', () => {
-      clearTimeout(filterTimer);
-      filterTimer = setTimeout(filter, 300);
-    });
+      // Debounced filter — avoids re-rendering on every keystroke
+      document.getElementById("search").addEventListener("input", () => {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(filter, 300);
+      });
 
-    function filter() {
-      const q = document.getElementById('search').value.toLowerCase();
-      render(all.filter(p => p.product_name.toLowerCase().includes(q) || (p.description||'').toLowerCase().includes(q)));
-    }
+      function filter() {
+        const q = document.getElementById("search").value.toLowerCase();
+        render(
+          all.filter(
+            (p) =>
+              p.product_name.toLowerCase().includes(q) ||
+              (p.description || "").toLowerCase().includes(q),
+          ),
+        );
+      }
 
-    function showSkeletons() {
-      document.getElementById('output').innerHTML = `
+      function showSkeletons() {
+        document.getElementById("output").innerHTML = `
         <div class="col-head-row">
           <div class="col-head">Product</div>
           <div class="col-head">Description</div>
           <div class="col-head">Price</div>
           <div class="col-head">Stock</div>
         </div>
-        ${Array(5).fill(`
+        ${Array(5)
+          .fill(
+            `
           <div class="skel-row">
             <div class="skel" style="width:55%"></div>
             <div class="skel" style="width:80%"></div>
             <div class="skel" style="width:50%"></div>
             <div class="skel" style="width:60%"></div>
-          </div>`).join('')}`;
-    }
-
-    async function load() {
-      showSkeletons();
-      try {
-        const res = await fetch('/products');
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        all = await res.json();
-        document.getElementById('updatedAt').textContent = 'Updated ' + new Date().toLocaleTimeString();
-        render(all);
-      } catch (e) {
-        document.getElementById('output').innerHTML = `<div class="error-msg">⚠ Could not load products — ${e.message}</div>`;
+          </div>`,
+          )
+          .join("")}`;
       }
-    }
 
-    load();
-  </script>
-</body>
+      async function load() {
+        showSkeletons();
+        try {
+          const res = await fetch("/products");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          all = await res.json();
+          document.getElementById("updatedAt").textContent =
+            "Updated " + new Date().toLocaleTimeString();
+          render(all);
+        } catch (e) {
+          document.getElementById("output").innerHTML =
+            `<div class="error-msg">⚠ Could not load products — ${e.message}</div>`;
+        }
+      }
+
+      load();
+    </script>
+  </body>
 </html>
