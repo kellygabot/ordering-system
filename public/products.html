@@ -68,12 +68,42 @@
               </div>
               <div class="p-desc">${p.description || '—'}</div>
               <div class="p-price">₱${parseFloat(p.price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              <div class="stock-pill ${stockClass(p.stock)}">
-                <span class="dot"></span>${stockLabel(p.stock)}
+              <div class="stock-cell">
+                <div class="stock-pill ${stockClass(p.stock)}">
+                  <span class="dot"></span>${stockLabel(p.stock)}
+                </div>
+                <button class="stock-btn" onclick="updateStock(${p.product_id}, ${p.stock})">Update</button>
               </div>
             </div>
           `).join('')}
         </div>`;
+    }
+
+    async function updateStock(productId, currentStock) {
+      const value = prompt('Enter new stock quantity:', String(currentStock));
+      if (value === null) return;
+
+      const newStock = Number(value);
+      if (!Number.isInteger(newStock) || newStock < 0) {
+        alert('Please enter a valid non-negative whole number.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/products/${productId}/stock`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stock: newStock })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to update stock.');
+
+        all = all.map((item) => item.product_id === productId ? { ...item, stock: newStock } : item);
+        filter();
+        document.getElementById('updatedAt').textContent = 'Updated ' + new Date().toLocaleTimeString();
+      } catch (e) {
+        alert(e.message);
+      }
     }
 
     // Debounced filter — avoids re-rendering on every keystroke

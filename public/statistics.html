@@ -37,10 +37,25 @@
     <div class="section-label">Commonly Bought Together</div>
     <div id="pairings"></div>
   </div>
+
+  <div class="section">
+    <div class="section-label">Order History</div>
+    <div id="orderHistory"></div>
+  </div>
 </main>
 
 <script>
   const fmt = (n) => parseFloat(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const orderHistoryEl = document.getElementById('orderHistory');
+
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
   function bsSkeleton() {
     return Array(5).fill(0).map(() => `
@@ -54,18 +69,21 @@
 
   document.getElementById('bestsellers').innerHTML = bsSkeleton();
   document.getElementById('pairings').innerHTML = bsSkeleton();
+  orderHistoryEl.innerHTML = bsSkeleton();
 
   async function load() {
-    const [ov, bs, pa] = await Promise.all([
+    const [ov, bs, pa, orders] = await Promise.all([
       fetch('/stats/overview').then(r => r.json()).catch(() => null),
       fetch('/stats/bestsellers').then(r => r.json()).catch(() => []),
       fetch('/stats/pairings').then(r => r.json()).catch(() => []),
+      fetch('/stats/orders').then(r => r.json()).catch(() => []),
     ]);
 
     document.getElementById('updatedAt').textContent = 'Updated ' + new Date().toLocaleTimeString();
     renderOverview(ov);
     renderBestsellers(bs);
     renderPairings(pa);
+    renderOrderHistory(orders);
   }
 
   function renderOverview(d) {
@@ -149,6 +167,66 @@
     requestAnimationFrame(() => {
       document.querySelectorAll('.bar-fill').forEach(b => b.style.transform = 'scaleX(1)');
     });
+  }
+
+  function renderOrderHistory(data) {
+    if (!data || !data.length) {
+      orderHistoryEl.innerHTML = '<div class="empty">No orders recorded yet.</div>';
+      return;
+    }
+
+    orderHistoryEl.innerHTML = `
+      <div class="table-wrap">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Items</th>
+              <th class="r">Total</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map((row) => {
+              const itemsText = row.items && row.items.length
+                ? row.items.map((item) => `${escapeHtml(item.product_name)} x${item.quantity}`).join('<br>')
+                : 'No items';
+
+              return `
+                <tr>
+                  <td>#${row.order_id}</td>
+                  <td>${new Date(row.order_date).toLocaleString()}</td>
+                  <td>${escapeHtml(row.full_name)}</td>
+                  <td>${escapeHtml(row.phone)}</td>
+                  <td class="items-col">${itemsText}</td>
+                  <td class="r">P${fmt(row.total_amount)}</td>
+                  <td>
+                    <button class="danger-btn" onclick="deleteOrder(${row.order_id})">Delete</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  async function deleteOrder(orderId) {
+    const ok = confirm(`Delete order #${orderId}? Stock will be restored automatically.`);
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`/stats/orders/${orderId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to delete order.');
+      await load();
+    } catch (e) {
+      alert(e.message);
+    }
   }
 
   load();

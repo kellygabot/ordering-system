@@ -9,12 +9,80 @@ app.use(bodyParser.json());
 app.use(express.static("public"));
 const PORT = process.env.PORT || 3000;
 
+function queryAsync(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.query(sql, params, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
+    });
+  });
+}
+
+function beginTransactionAsync() {
+  return new Promise((resolve, reject) => {
+    db.beginTransaction((err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+}
+
+function commitAsync() {
+  return new Promise((resolve, reject) => {
+    db.commit((err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+}
+
+function rollbackAsync() {
+  return new Promise((resolve) => {
+    db.rollback(() => resolve());
+  });
+}
+
 // --- Products ---
 app.get("/products", (req, res) => {
-  db.query("SELECT * FROM products WHERE stock > 0", (err, result) => {
+  db.query("SELECT * FROM products ORDER BY product_name ASC", (err, result) => {
     if (err) return res.status(500).json({ message: err.message });
     res.json(result);
   });
+});
+
+app.put("/products/:productId/stock", (req, res) => {
+  const productId = parseInt(req.params.productId, 10);
+  const parsedStock = Number(req.body.stock);
+  const newStock = Number.isInteger(parsedStock) ? parsedStock : NaN;
+
+  if (!Number.isInteger(productId) || productId <= 0) {
+    return res.status(400).json({ message: "Invalid product ID." });
+  }
+  if (!Number.isInteger(newStock) || newStock < 0) {
+    return res
+      .status(400)
+      .json({ message: "Stock must be a non-negative whole number." });
+  }
+
+  db.query(
+    "UPDATE products SET stock = ? WHERE product_id = ?",
+    [newStock, productId],
+    (err, result) => {
+      if (err) return res.status(500).json({ message: err.message });
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Product not found." });
+      }
+
+      db.query(
+        "SELECT product_id, product_name, stock FROM products WHERE product_id = ?",
+        [productId],
+        (err, rows) => {
+          if (err) return res.status(500).json({ message: err.message });
+          res.json({ message: "Stock updated successfully.", product: rows[0] });
+        },
+      );
+    },
+  );
 });
 
 // --- Place Order ---
@@ -28,6 +96,9 @@ app.post("/order", (req, res) => {
     return res
       .status(400)
       .json({ message: "Full Name must not contain numbers." });
+  }
+  if (!/^\d+$/.test(phone)) {
+    return res.status(400).json({ message: "Phone must contain numbers only." });
   }
 
   db.query(
@@ -175,6 +246,103 @@ app.get("/stats/pairings", (req, res) => {
     if (err) return res.status(500).json({ message: err.message });
     res.json(result);
   });
+});
+
+app.get("/stats/orders", async (req, res) => {
+  const sql = `
+    SELECT
+      o.order_id,
+      o.order_date,
+      o.total_amount,
+      o.order_status,
+      c.full_name,
+      c.phone,
+      oi.product_id,
+      oi.quantity,
+      p.product_name
+    FROM orders o
+    JOIN customers c ON c.customer_id = o.customer_id
+    LEFT JOIN order_items oi ON oi.order_id = o.order_id
+    LEFT JOIN products p ON p.product_id = oi.product_id
+    ORDER BY o.order_date DESC, o.order_id DESC, oi.product_id ASC
+  `;
+
+  try {
+    const rows = await queryAsync(sql);
+    const orderMap = new Map();
+
+    rows.forEach((row) => {
+      if (!orderMap.has(row.order_id)) {
+        orderMap.set(row.order_id, {
+          order_id: row.order_id,
+          order_date: row.order_date,
+          total_amount: row.total_amount,
+          order_status: row.order_status,
+          full_name: row.full_name,
+          phone: row.phone,
+          items: [],
+        });
+      }
+
+      if (row.product_id) {
+        orderMap.get(row.order_id).items.push({
+          product_id: row.product_id,
+          product_name: row.product_name,
+          quantity: row.quantity,
+        });
+      }
+    });
+
+    res.json(Array.from(orderMap.values()));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.delete("/stats/orders/:orderId", async (req, res) => {
+  const orderId = parseInt(req.params.orderId, 10);
+
+  if (!Number.isInteger(orderId) || orderId <= 0) {
+    return res.status(400).json({ message: "Invalid order ID." });
+  }
+
+  try {
+    await beginTransactionAsync();
+
+    const existingOrder = await queryAsync(
+      "SELECT order_id FROM orders WHERE order_id = ? FOR UPDATE",
+      [orderId],
+    );
+
+    if (!existingOrder.length) {
+      await rollbackAsync();
+      return res.status(404).json({ message: "Order not found." });
+    }
+
+    const items = await queryAsync(
+      "SELECT product_id, quantity FROM order_items WHERE order_id = ? FOR UPDATE",
+      [orderId],
+    );
+
+    for (const item of items) {
+      await queryAsync(
+        "UPDATE products SET stock = stock + ? WHERE product_id = ?",
+        [item.quantity, item.product_id],
+      );
+    }
+
+    await queryAsync("DELETE FROM orders WHERE order_id = ?", [orderId]);
+    await commitAsync();
+
+    res.json({
+      message: "Order deleted and stock restored successfully.",
+      order_id: orderId,
+      restored_items: items.length,
+    });
+  } catch (err) {
+    await rollbackAsync();
+    res.status(500).json({ message: err.message });
+  }
 });
 
 app.listen(PORT, () => {

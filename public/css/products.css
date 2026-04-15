@@ -87,6 +87,26 @@ h1 {
   font-size: 0.85rem;
   font-weight: 500;
 }
+.stock-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.stock-btn {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.75rem;
+}
+.stock-btn:hover {
+  box-shadow: 0 8px 16px -10px rgba(59, 130, 246, 0.8);
+  transform: translateY(-1px);
+}
 .dot {
   width: 8px;
   height: 8px;

@@ -164,4 +164,77 @@ h1 {
 
 .empty { font-size: 0.9rem; color: var(--muted); padding: 2rem 0; text-align: center; line-height: 1.6; background: var(--ghost); border-radius: var(--radius); }
 .err   { font-size: 0.9rem; color: var(--red); padding: 1rem; text-align: center; background: #fee2e2; border-radius: var(--radius); }
-.skel-row { display: flex; gap: 1rem; padding: 1rem; align-items: center; background: var(--surface); border-radius: var(--radius); margin-bottom: 0.5rem;}
+.skel-row { display: flex; gap: 1rem; padding: 1rem; align-items: center; background: var(--surface); border-radius: var(--radius); margin-bottom: 0.5rem;}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.5rem;
+}
+
+.orders-table thead th {
+  text-align: left;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted-light);
+  font-weight: 500;
+  padding: 0 1rem 0.9rem;
+  white-space: nowrap;
+}
+
+.orders-table tbody tr {
+  background: var(--surface);
+  transition: all var(--transition);
+}
+
+.orders-table tbody tr:hover {
+  background: var(--ghost);
+  transform: translateY(-1px);
+}
+
+.orders-table tbody td {
+  padding: 0.95rem 1rem;
+  vertical-align: top;
+  font-size: 0.9rem;
+}
+
+.orders-table tbody td:first-child {
+  border-top-left-radius: var(--radius);
+  border-bottom-left-radius: var(--radius);
+}
+
+.orders-table tbody td:last-child {
+  border-top-right-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+.orders-table .r {
+  text-align: right;
+}
+
+.items-col {
+  color: var(--muted);
+  line-height: 1.5;
+  min-width: 180px;
+}
+
+.danger-btn {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.42rem 0.75rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.danger-btn:hover {
+  box-shadow: 0 8px 16px -10px rgba(59, 130, 246, 0.8);
+}

@@ -43,7 +43,7 @@
             </div>
             <div class="field">
               <label for="phone">Phone</label>
-              <input id="phone" type="text" placeholder="09171234567" />
+              <input id="phone" type="text" inputmode="numeric" placeholder="09171234567" />
             </div>
             <div class="field">
               <label for="address">Address</label>
@@ -208,6 +208,9 @@
       document.getElementById("full_name").addEventListener("input", (e) => {
         e.target.value = e.target.value.replace(/\d/g, "");
       });
+      document.getElementById("phone").addEventListener("input", (e) => {
+        e.target.value = e.target.value.replace(/\D/g, "");
+      });
 
       document.getElementById("productSearch").addEventListener("input", () => {
         clearTimeout(searchTimer);
@@ -266,6 +269,10 @@
         }
         if (/\d/.test(full_name)) {
           toast("err", "Full Name must not contain numbers.");
+          return;
+        }
+        if (!/^\d+$/.test(phone)) {
+          toast("err", "Phone must contain numbers only.");
           return;
         }
         if (!Object.keys(cart).length) {
