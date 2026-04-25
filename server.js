@@ -146,7 +146,7 @@ function placeOrder(customerId, items, res) {
   });
 
   db.query(
-    `INSERT INTO orders (customer_id, total_amount, order_status) VALUES (?, ?, 'Pending')`,
+    `INSERT INTO orders (customer_id, total_amount) VALUES (?, ?, 'Pending')`,
     [customerId, totalAmount],
     (err, orderResult) => {
       if (err) return res.status(500).json({ message: err.message });
@@ -262,7 +262,6 @@ app.get("/stats/orders", async (req, res) => {
       o.order_id,
       o.order_date,
       o.total_amount,
-      o.order_status,
       c.full_name,
       c.phone,
       oi.product_id,
@@ -285,7 +284,6 @@ app.get("/stats/orders", async (req, res) => {
           order_id: row.order_id,
           order_date: row.order_date,
           total_amount: row.total_amount,
-          order_status: row.order_status,
           full_name: row.full_name,
           phone: row.phone,
           items: [],
