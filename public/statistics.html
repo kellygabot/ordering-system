@@ -4,19 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Statistics — QuickOrder</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Jost:wght@300;400;500&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/statistics.css" />
   </head>
   <body>
     <header>
       <a href="index.html" class="back">← Back</a>
-      <span class="logo"
-        >Quick<span style="color: var(--accent)">Order</span></span
-      >
+      <span class="logo">Quick<span style="color: var(--accent)">Order</span></span>
       <span class="header-right" id="updatedAt"></span>
     </header>
 
@@ -29,15 +24,15 @@
       <div class="overview" id="overview">
         <div class="ov-card">
           <div class="ov-label">Total Orders</div>
-          <div class="ov-value skel" style="width: 60%; height: 2rem"></div>
+          <div class="ov-value skel" style="width:60%;height:2rem"></div>
         </div>
         <div class="ov-card">
           <div class="ov-label">Revenue</div>
-          <div class="ov-value skel" style="width: 70%; height: 2rem"></div>
+          <div class="ov-value skel" style="width:70%;height:2rem"></div>
         </div>
         <div class="ov-card">
           <div class="ov-label">Customers</div>
-          <div class="ov-value skel" style="width: 50%; height: 2rem"></div>
+          <div class="ov-value skel" style="width:50%;height:2rem"></div>
         </div>
       </div>
 
@@ -57,60 +52,196 @@
       </div>
     </main>
 
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Edit Order <span id="modalOrderId" style="color:var(--accent)"></span></h3>
+          <button class="modal-close" onclick="closeEditModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-section-label">Customer</div>
+          <div class="modal-field">
+            <label>Full Name</label>
+            <input id="editName" type="text" placeholder="Juan Dela Cruz" />
+          </div>
+          <div class="modal-field">
+            <label>Phone</label>
+            <input id="editPhone" type="text" inputmode="numeric" placeholder="09171234567" />
+          </div>
+
+          <div class="modal-section-label" style="margin-top:1.5rem">Items</div>
+          <div id="editItems"></div>
+          <button class="add-item-btn" id="addItemBtn" onclick="showAddItemSelect()">+ Add Item</button>
+          <select class="add-item-select" id="addItemSelect" style="display:none"></select>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-cancel" onclick="closeEditModal()">Cancel</button>
+          <button class="modal-save" id="saveEditBtn" onclick="saveEdit()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       const fmt = (n) =>
-        parseFloat(n).toLocaleString("en-PH", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
-      const orderHistoryEl = document.getElementById("orderHistory");
+        parseFloat(n).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       function escapeHtml(text) {
         return String(text)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
       }
 
+      let ordersData = new Map();
+      let allProducts = [];
+      let editState = {};
+
+      // ── Products (for add-item dropdown) ──
+      async function loadProductsForEdit() {
+        try {
+          const res = await fetch("/products");
+          allProducts = await res.json();
+        } catch (e) { allProducts = []; }
+      }
+
+      // ── Edit Modal ──
+      function openEditModal(orderId) {
+        const order = ordersData.get(orderId);
+        if (!order) return;
+        editState = {
+          orderId: order.order_id,
+          items: order.items.map(i => ({ ...i }))
+        };
+        document.getElementById("modalOrderId").textContent = "#" + order.order_id;
+        document.getElementById("editName").value = order.full_name;
+        document.getElementById("editPhone").value = order.phone;
+        document.getElementById("addItemSelect").style.display = "none";
+        renderEditItems();
+        document.getElementById("modalOverlay").classList.add("show");
+      }
+
+      function closeEditModal() {
+        document.getElementById("modalOverlay").classList.remove("show");
+      }
+
+      function renderEditItems() {
+        const el = document.getElementById("editItems");
+        if (!editState.items.length) {
+          el.innerHTML = '<div class="edit-empty">No items. Add at least one.</div>';
+          return;
+        }
+        el.innerHTML = editState.items.map((item, i) => `
+          <div class="edit-item-row">
+            <div class="edit-item-name">${escapeHtml(item.product_name)}</div>
+            <div class="edit-item-qty">
+              <button class="eq-btn" onclick="changeEditQty(${i},-1)">−</button>
+              <span class="eq-qty">${item.quantity}</span>
+              <button class="eq-btn" onclick="changeEditQty(${i},1)">+</button>
+            </div>
+            <button class="eq-remove" onclick="removeEditItem(${i})" title="Remove">×</button>
+          </div>`).join("");
+      }
+
+      function changeEditQty(index, delta) {
+        editState.items[index].quantity = Math.max(1, editState.items[index].quantity + delta);
+        renderEditItems();
+      }
+
+      function removeEditItem(index) {
+        editState.items.splice(index, 1);
+        renderEditItems();
+      }
+
+      function showAddItemSelect() {
+        const select = document.getElementById("addItemSelect");
+        const existingIds = new Set(editState.items.map(i => i.product_id));
+        const available = allProducts.filter(p => !existingIds.has(p.product_id));
+        if (!available.length) {
+          alert("No more products to add.");
+          return;
+        }
+        select.innerHTML = '<option value="">— Select a product —</option>' +
+          available.map(p =>
+            `<option value="${p.product_id}">${escapeHtml(p.product_name)} — ₱${fmt(p.price)}</option>`
+          ).join("");
+        select.style.display = "block";
+        select.focus();
+        select.onchange = function () {
+          const pid = parseInt(this.value);
+          if (!pid) return;
+          const product = allProducts.find(p => p.product_id === pid);
+          if (!product) return;
+          editState.items.push({ product_id: product.product_id, product_name: product.product_name, quantity: 1 });
+          renderEditItems();
+          this.value = "";
+          this.style.display = "none";
+        };
+      }
+
+      async function saveEdit() {
+        const full_name = document.getElementById("editName").value.trim();
+        const phone = document.getElementById("editPhone").value.trim();
+
+        if (!full_name || !phone) { alert("Please fill in all fields."); return; }
+        if (/\d/.test(full_name)) { alert("Full Name must not contain numbers."); return; }
+        if (!/^\d+$/.test(phone)) { alert("Phone must contain numbers only."); return; }
+        if (!editState.items.length) { alert("Order must have at least one item."); return; }
+
+        const btn = document.getElementById("saveEditBtn");
+        btn.disabled = true;
+        btn.textContent = "Saving…";
+
+        try {
+          const res = await fetch(`/stats/orders/${editState.orderId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              full_name, phone,
+              items: editState.items.map(i => ({ product_id: i.product_id, quantity: i.quantity }))
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Failed to save.");
+          closeEditModal();
+          await load();
+        } catch (e) {
+          alert(e.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Save Changes";
+        }
+      }
+
+      // Close on backdrop click or Escape
+      document.getElementById("modalOverlay").addEventListener("click", function (e) {
+        if (e.target === this) closeEditModal();
+      });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeEditModal(); });
+
+      // ── Skeletons ──
       function bsSkeleton() {
-        return Array(5)
-          .fill(0)
-          .map(
-            () => `
-      <div class="skel-row">
-        <div class="skel" style="width:1.5rem;height:1rem;flex-shrink:0"></div>
-        <div style="flex:1"><div class="skel" style="width:55%;margin-bottom:6px"></div><div class="skel" style="width:35%;height:10px"></div></div>
-        <div class="skel" style="width:100px;height:10px"></div>
-        <div class="skel" style="width:50px;height:10px"></div>
-      </div>`,
-          )
-          .join("");
+        return Array(5).fill(0).map(() => `
+          <div class="skel-row">
+            <div class="skel" style="width:1.5rem;height:1rem;flex-shrink:0"></div>
+            <div style="flex:1"><div class="skel" style="width:55%;margin-bottom:6px"></div><div class="skel" style="width:35%;height:10px"></div></div>
+            <div class="skel" style="width:100px;height:10px"></div>
+            <div class="skel" style="width:50px;height:10px"></div>
+          </div>`).join("");
       }
 
       document.getElementById("bestsellers").innerHTML = bsSkeleton();
       document.getElementById("pairings").innerHTML = bsSkeleton();
-      orderHistoryEl.innerHTML = bsSkeleton();
+      document.getElementById("orderHistory").innerHTML = bsSkeleton();
 
+      // ── Load ──
       async function load() {
         const [ov, bs, pa, orders] = await Promise.all([
-          fetch("/stats/overview")
-            .then((r) => r.json())
-            .catch(() => null),
-          fetch("/stats/bestsellers")
-            .then((r) => r.json())
-            .catch(() => []),
-          fetch("/stats/pairings")
-            .then((r) => r.json())
-            .catch(() => []),
-          fetch("/stats/orders")
-            .then((r) => r.json())
-            .catch(() => []),
+          fetch("/stats/overview").then(r => r.json()).catch(() => null),
+          fetch("/stats/bestsellers").then(r => r.json()).catch(() => []),
+          fetch("/stats/pairings").then(r => r.json()).catch(() => []),
+          fetch("/stats/orders").then(r => r.json()).catch(() => []),
         ]);
-
-        document.getElementById("updatedAt").textContent =
-          "Updated " + new Date().toLocaleTimeString();
+        document.getElementById("updatedAt").textContent = "Updated " + new Date().toLocaleTimeString();
         renderOverview(ov);
         renderBestsellers(bs);
         renderPairings(pa);
@@ -119,177 +250,101 @@
 
       function renderOverview(d) {
         const el = document.getElementById("overview");
-        if (!d) {
-          el.innerHTML =
-            '<div class="err" style="padding:1.2rem">Could not load overview.</div>';
-          return;
-        }
+        if (!d) { el.innerHTML = '<div class="err" style="padding:1.2rem">Could not load overview.</div>'; return; }
         el.innerHTML = `
-      <div class="ov-card"><div class="ov-label">Total Orders</div><div class="ov-value">${d.total_orders}</div></div>
-      <div class="ov-card"><div class="ov-label">Revenue</div><div class="ov-value accent">₱${fmt(d.total_revenue)}</div></div>
-      <div class="ov-card"><div class="ov-label">Customers</div><div class="ov-value">${d.total_customers}</div></div>
-    `;
+          <div class="ov-card"><div class="ov-label">Total Orders</div><div class="ov-value">${d.total_orders}</div></div>
+          <div class="ov-card"><div class="ov-label">Revenue</div><div class="ov-value accent">₱${fmt(d.total_revenue)}</div></div>
+          <div class="ov-card"><div class="ov-label">Customers</div><div class="ov-value">${d.total_customers}</div></div>`;
       }
 
       function renderBestsellers(data) {
         const el = document.getElementById("bestsellers");
-        if (!data || !data.length) {
-          el.innerHTML = '<div class="empty">No sales data yet.</div>';
-          return;
-        }
-        const max = Math.max(...data.map((d) => Number(d.total_sold)));
-
+        if (!data || !data.length) { el.innerHTML = '<div class="empty">No sales data yet.</div>'; return; }
+        const max = Math.max(...data.map(d => Number(d.total_sold)));
         el.innerHTML = `
-      <table class="bs-table">
-        <thead>
-          <tr>
-            <th style="width:2rem"></th>
-            <th>Product</th>
-            <th>Units Sold</th>
-            <th class="r">Revenue</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data
-            .map(
-              (d, i) => `
-            <tr>
-              <td class="rank ${i < 3 ? "top" : ""}">${i + 1}</td>
-              <td>
-                <div class="bs-name">${d.product_name}</div>
-                <div class="bs-meta">${d.order_count} order${d.order_count !== 1 ? "s" : ""} · ₱${fmt(d.price)} each</div>
-              </td>
-              <td>
-                <div class="bar-wrap">
-                  <div class="bar-track"><div class="bar-fill" style="width:${((d.total_sold / max) * 100).toFixed(1)}%"></div></div>
-                  <span class="bar-num">${d.total_sold}</span>
-                </div>
-              </td>
-              <td class="r">₱${fmt(d.total_revenue)}</td>
-            </tr>
-          `,
-            )
-            .join("")}
-        </tbody>
-      </table>`;
-
-        // Single rAF is sufficient to let the DOM paint before animating
+          <table class="bs-table">
+            <thead><tr><th style="width:2rem"></th><th>Product</th><th>Units Sold</th><th class="r">Revenue</th></tr></thead>
+            <tbody>${data.map((d, i) => `
+              <tr>
+                <td class="rank ${i < 3 ? "top" : ""}">${i + 1}</td>
+                <td><div class="bs-name">${d.product_name}</div><div class="bs-meta">${d.order_count} order${d.order_count !== 1 ? "s" : ""} · ₱${fmt(d.price)} each</div></td>
+                <td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${((d.total_sold / max) * 100).toFixed(1)}%"></div></div><span class="bar-num">${d.total_sold}</span></div></td>
+                <td class="r">₱${fmt(d.total_revenue)}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>`;
         requestAnimationFrame(() => {
-          document
-            .querySelectorAll(".bar-fill")
-            .forEach((b) => (b.style.transform = "scaleX(1)"));
+          document.querySelectorAll(".bar-fill").forEach(b => b.style.transform = "scaleX(1)");
         });
       }
 
       function renderPairings(data) {
         const el = document.getElementById("pairings");
-        if (!data || !data.length) {
-          el.innerHTML =
-            '<div class="empty">Not enough order data to find pairings yet. Pairings appear once multiple items are ordered together.</div>';
-          return;
-        }
-        const max = Math.max(...data.map((d) => Number(d.pair_count)));
-
-        el.innerHTML = `<div class="pairs-list">${data
-          .map(
-            (d, i) => `
-        <div class="pair-row" style="animation-delay:${i * 0.04}s">
-          <div class="pair-rank">${i + 1}</div>
-          <div class="pair-names">
-            <strong>${d.product_a}</strong>
-            <span class="pair-plus">+</span>
-            <strong>${d.product_b}</strong>
-          </div>
-          <div class="pair-pill">${d.pair_count}× together</div>
-          <div class="pair-bar-wrap">
-            <div class="bar-track" style="flex:1"><div class="bar-fill" style="background:var(--green);width:${((d.pair_count / max) * 100).toFixed(1)}%"></div></div>
-          </div>
-        </div>
-      `,
-          )
-          .join("")}</div>`;
-
+        if (!data || !data.length) { el.innerHTML = '<div class="empty">Not enough order data to find pairings yet. Pairings appear once multiple items are ordered together.</div>'; return; }
+        const max = Math.max(...data.map(d => Number(d.pair_count)));
+        el.innerHTML = `<div class="pairs-list">${data.map((d, i) => `
+          <div class="pair-row" style="animation-delay:${i * 0.04}s">
+            <div class="pair-rank">${i + 1}</div>
+            <div class="pair-names"><strong>${d.product_a}</strong><span class="pair-plus">+</span><strong>${d.product_b}</strong></div>
+            <div class="pair-pill">${d.pair_count}× together</div>
+            <div class="pair-bar-wrap"><div class="bar-track" style="flex:1"><div class="bar-fill" style="background:var(--green);width:${((d.pair_count / max) * 100).toFixed(1)}%"></div></div></div>
+          </div>`).join("")}</div>`;
         requestAnimationFrame(() => {
-          document
-            .querySelectorAll(".bar-fill")
-            .forEach((b) => (b.style.transform = "scaleX(1)"));
+          document.querySelectorAll(".bar-fill").forEach(b => b.style.transform = "scaleX(1)");
         });
       }
 
       function renderOrderHistory(data) {
-        if (!data || !data.length) {
-          orderHistoryEl.innerHTML =
-            '<div class="empty">No orders recorded yet.</div>';
-          return;
-        }
+        const el = document.getElementById("orderHistory");
+        if (!data || !data.length) { el.innerHTML = '<div class="empty">No orders recorded yet.</div>'; return; }
 
-        orderHistoryEl.innerHTML = `
-      <div class="table-wrap">
-        <table class="orders-table">
-          <thead>
-            <tr>
-              <th>Order #</th>
-              <th>Date</th>
-              <th>Customer</th>
-              <th>Phone</th>
-              <th>Items</th>
-              <th class="r">Total</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data
-              .map((row) => {
-                const itemsText =
-                  row.items && row.items.length
-                    ? row.items
-                        .map(
-                          (item) =>
-                            `${escapeHtml(item.product_name)} x${item.quantity}`,
-                        )
-                        .join("<br>")
-                    : "No items";
+        ordersData = new Map(data.map(o => [o.order_id, o]));
 
-                return `
+        el.innerHTML = `
+          <div class="table-wrap">
+            <table class="orders-table">
+              <thead>
                 <tr>
-                  <td>#${row.order_id}</td>
-                  <td>${new Date(row.order_date).toLocaleString()}</td>
-                  <td>${escapeHtml(row.full_name)}</td>
-                  <td>${escapeHtml(row.phone)}</td>
-                  <td class="items-col">${itemsText}</td>
-                  <td class="r">P${fmt(row.total_amount)}</td>
-                  <td>
-                    <button class="danger-btn" onclick="deleteOrder(${row.order_id})">Delete</button>
-                  </td>
+                  <th>Order #</th><th>Date</th><th>Customer</th><th>Phone</th><th>Items</th><th class="r">Total</th><th>Actions</th>
                 </tr>
-              `;
-              })
-              .join("")}
-          </tbody>
-        </table>
-      </div>
-    `;
+              </thead>
+              <tbody>
+                ${data.map(row => {
+                  const itemsText = row.items && row.items.length
+                    ? row.items.map(item => `${escapeHtml(item.product_name)} ×${item.quantity}`).join("<br>")
+                    : "No items";
+                  return `
+                    <tr>
+                      <td><span class="order-id">#${row.order_id}</span></td>
+                      <td>${new Date(row.order_date).toLocaleString()}</td>
+                      <td>${escapeHtml(row.full_name)}</td>
+                      <td>${escapeHtml(row.phone)}</td>
+                      <td class="items-col">${itemsText}</td>
+                      <td class="r">₱${fmt(row.total_amount)}</td>
+                      <td>
+                        <div class="action-group">
+                          <button class="edit-btn" onclick="openEditModal(${row.order_id})">Edit</button>
+                          <button class="danger-btn" onclick="deleteOrder(${row.order_id})">Delete</button>
+                        </div>
+                      </td>
+                    </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>`;
       }
 
       async function deleteOrder(orderId) {
-        const ok = confirm(
-          `Delete order #${orderId}? Stock will be restored automatically.`,
-        );
-        if (!ok) return;
-
+        if (!confirm(`Delete order #${orderId}? Stock will be restored automatically.`)) return;
         try {
-          const res = await fetch(`/stats/orders/${orderId}`, {
-            method: "DELETE",
-          });
+          const res = await fetch(`/stats/orders/${orderId}`, { method: "DELETE" });
           const data = await res.json();
-          if (!res.ok)
-            throw new Error(data.message || "Failed to delete order.");
+          if (!res.ok) throw new Error(data.message || "Failed to delete order.");
           await load();
-        } catch (e) {
-          alert(e.message);
-        }
+        } catch (e) { alert(e.message); }
       }
 
+      loadProductsForEdit();
       load();
     </script>
   </body>

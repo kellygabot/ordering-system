@@ -146,7 +146,7 @@ function placeOrder(customerId, items, res) {
   });
 
   db.query(
-    `INSERT INTO orders (customer_id, total_amount) VALUES (?, ?, 'Pending')`,
+    `INSERT INTO orders (customer_id, total_amount) VALUES (?, ?)`,
     [customerId, totalAmount],
     (err, orderResult) => {
       if (err) return res.status(500).json({ message: err.message });
@@ -345,6 +345,103 @@ app.delete("/stats/orders/:orderId", async (req, res) => {
       order_id: orderId,
       restored_items: items.length,
     });
+  } catch (err) {
+    await rollbackAsync();
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.put("/stats/orders/:orderId", async (req, res) => {
+  const orderId = parseInt(req.params.orderId, 10);
+  if (!Number.isInteger(orderId) || orderId <= 0)
+    return res.status(400).json({ message: "Invalid order ID." });
+
+  const { full_name, phone, items } = req.body;
+  if (!full_name || !phone)
+    return res.status(400).json({ message: "Missing required fields." });
+  if (/\d/.test(full_name))
+    return res
+      .status(400)
+      .json({ message: "Full Name must not contain numbers." });
+  if (!/^\d+$/.test(phone))
+    return res
+      .status(400)
+      .json({ message: "Phone must contain numbers only." });
+  if (!items || !items.length)
+    return res
+      .status(400)
+      .json({ message: "Order must have at least one item." });
+
+  try {
+    await beginTransactionAsync();
+
+    const existing = await queryAsync(
+      "SELECT order_id, customer_id FROM orders WHERE order_id = ? FOR UPDATE",
+      [orderId],
+    );
+    if (!existing.length) {
+      await rollbackAsync();
+      return res.status(404).json({ message: "Order not found." });
+    }
+    const customerId = existing[0].customer_id;
+
+    await queryAsync(
+      "UPDATE customers SET full_name = ?, phone = ? WHERE customer_id = ?",
+      [full_name, phone, customerId],
+    );
+
+    const oldItems = await queryAsync(
+      "SELECT product_id, quantity FROM order_items WHERE order_id = ?",
+      [orderId],
+    );
+    for (const item of oldItems) {
+      await queryAsync(
+        "UPDATE products SET stock = stock + ? WHERE product_id = ?",
+        [item.quantity, item.product_id],
+      );
+    }
+
+    await queryAsync("DELETE FROM order_items WHERE order_id = ?", [orderId]);
+
+    let total = 0;
+    for (const item of items) {
+      const prods = await queryAsync(
+        "SELECT price, stock FROM products WHERE product_id = ?",
+        [item.product_id],
+      );
+      if (!prods.length) {
+        await rollbackAsync();
+        return res
+          .status(400)
+          .json({ message: `Product ${item.product_id} not found.` });
+      }
+      const { price, stock } = prods[0];
+      if (stock < item.quantity) {
+        await rollbackAsync();
+        return res
+          .status(400)
+          .json({
+            message: `Insufficient stock for product ID ${item.product_id}.`,
+          });
+      }
+      const subtotal = item.quantity * price;
+      total += subtotal;
+      await queryAsync(
+        "INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)",
+        [orderId, item.product_id, item.quantity, price, subtotal],
+      );
+      await queryAsync(
+        "UPDATE products SET stock = stock - ? WHERE product_id = ?",
+        [item.quantity, item.product_id],
+      );
+    }
+
+    await queryAsync("UPDATE orders SET total_amount = ? WHERE order_id = ?", [
+      total,
+      orderId,
+    ]);
+    await commitAsync();
+    res.json({ message: "Order updated successfully.", order_id: orderId });
   } catch (err) {
     await rollbackAsync();
     res.status(500).json({ message: err.message });
